@@ -9,6 +9,39 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
+  .top{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+  }
+
+  .actions{
+    display:flex;
+    justify-content:center;
+    width:100%;
+  }
+
+  .titleBlock h1{
+    margin:0;
+  }
+
+  .prop{
+    font-size:12px;      /* aqui controla o tamanho */
+    color:#a7b0c3;
+    font-weight:700;
+    margin-top:4px;
+  }
+  
     :root{
       --bg:#0b0c10;
       --ink:#eef2ff;
@@ -147,8 +180,8 @@
         </div>
         <div>
           <h1>Simulador de Receituário (Cruzeiro do Sul)</h1>
-          <div style="font-size:13px; color:#a7b0c3; font-weight:700">
-            Propriedade de Prof. Me. Fernando H. Martins - © Copyright 2026
+          <div class="prop"> Propriedade de prof. Me. Fernando H. Martins - © Copyright 2026</div><p class="sub">Somente <b>Visualizar</b> e <b>Salvar PDF</b>. Propriedade de Prof. Me. Fernando H. Martins - Copyright 2026</p>
+        </div>
       </div>
 
       <div class="actions">
