@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simulador de Receituário Odonto</title>
+  <style>
+    :root{
+      --bg:#0b0c10;
+      --panel:#11131a;
+      --paper:#ffffff;
+      --ink:#111;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --accent:#7c3aed;
+      --danger:#ef4444;
+      --ok:#10b981;
+      --warn:#f59e0b;
+    }
+
+    *{box-sizing:border-box;font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;}
+    body{margin:0;background:linear-gradient(135deg,#0b0c10 0%, #0e1020 60%, #0b0c10 100%);color:#e5e7eb;}
+    a{color:inherit}
+    .wrap{max-width:1200px;margin:0 auto;padding:18px;}
+    header{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px;}
+    .title{display:flex;flex-direction:column;gap:2px;}
+    .title h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .title small{color:#a1a1aa}
+
+    .toolbar{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    }
+    button, select, input, textarea{
+      border:1px solid #2a2f3a;background:#0f1220;color:#e5e7eb;border-radius:10px;padding:10px 12px;
+      outline:none;
+    }
+    button{cursor:pointer}
+    button:hover{border-color:#3c4355}
+    button.primary{background:linear-gradient(135deg,#6d28d9,#7c3aed);border-color:#7c3aed}
+    button.danger{background:#1b0f14;border-color:#3a1b25}
+    button.ghost{background:transparent}
+    select{min-width:320px}
+    @media (max-width: 980px){
+      select{min-width:100%}
+    }
+
+    .pill{
+      padding:6px 10px;border-radius:999px;border:1px solid #2a2f3a;color:#cbd5e1;font-size:12px;
+      background:rgba(255,255,255,.04);
+    }
+    .pill.ok{border-color:rgba(16,185,129,.35);color:#a7f3d0}
+    .pill.warn{border-color:rgba(245,158,11,.35);color:#fde68a}
+    .pill.danger{border-color:rgba(239,68,68,.35);color:#fecaca}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap:14px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    .card{
+      background:rgba(255,255,255,.04);
+      border:1px solid #222838;
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    .card h2{margin:0 0 10px 0;font-size:14px;color:#e2e8f0}
+    .caseBox{display:flex;flex-direction:column;gap:10px}
+
+    /* ============================
+       FIX CONTRASTE (painel do caso)
+       ============================ */
+    .caseItem{
+      padding:10px 12px;border-radius:14px;
+      background:#f8fafc;              /* fundo claro */
+      border:1px dashed #cbd5e1;       /* borda visível */
+      line-height:1.35;
+      color:#111827;                   /* texto escuro */
+    }
+    .caseItem b{color:#111827}
+    .caseItem .muted{color:#1f2937}
+
+    .note{color:#a1a1aa;font-size:13px;margin-top:8px}
+
+    /* “Papel” do receituário */
+    .paperWrap{
+      background:rgba(255,255,255,.04);
+      border:1px solid #222838;
+      border-radius:16px;
+      padding:14px;
+      overflow:hidden;
+    }
+    .paper{
+      background:var(--paper);
+      color:var(--ink);
+      border-radius:14px;
+      padding:18px 18px 14px 18px;
+      position:relative;
+      min-height:680px;
+    }
+    .paper:before{
+      content:"";
+      position:absolute;inset:0;
+      background:
+        linear-gradient(to bottom, transparent 0, transparent 34px, rgba(0,0,0,.035) 35px) 0 122px / 100% 35px repeat-y;
+      pointer-events:none;
+      border-radius:14px;
+    }
+    .paperHeader{
+      display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+      border-bottom:1px solid var(--line);
+      padding-bottom:10px;margin-bottom:10px;
+      position:relative; z-index:1;
+    }
+    .logo{
+      width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#06b6d4);
+      display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;
+      user-select:none;
+    }
+    .clinic{flex:1;}
+    .clinic .name{font-weight:800;font-size:16px;margin:0}
+    .clinic .sub{margin:3px 0 0 0;color:#4b5563;font-size:12px}
+    .rxStamp{
+      font-weight:900;font-size:24px;letter-spacing:1px;color:#111;
+      padding:6px 10px;border:2px solid #111;border-radius:12px;
+    }
+    .sectionTitle{
+      font-weight:800;font-size:12px;color:#111;margin:10px 0 6px 0;
+      position:relative; z-index:1;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      position:relative; z-index:1;
+    }
+    .row3{grid-template-columns: 1fr 1fr 1fr}
+    .field label{
+      display:block;font-size:11px;color:#374151;margin-bottom:4px;font-weight:700;
+    }
+    .field input, .field textarea, .field select{
+      width:100%;
+      border:1px solid #d1d5db;
+      background:#fff;
+      color:#111;
+      border-radius:10px;
+      padding:10px 10px;
+      font-size:13px;
+    }
+    .field textarea{min-height:70px;resize:vertical}
+    .divider{
+      height:1px;background:var(--line);margin:12px 0;position:relative;z-index:1;
+    }
+
+    /* ============================
+       Seleção do modo (Pré/Pós/Ambos)
+       ============================ */
+    .modeBar{
+      display:flex;gap:10px;flex-wrap:wrap;
+      align-items:center;justify-content:space-between;
+      background:#f3f4f6;border:1px solid #e5e7eb;border-radius:14px;
+      padding:10px 12px;margin-top:8px;position:relative;z-index:1;
+    }
+    .modeLeft{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+      color:#111;font-size:12px;font-weight:800;
+    }
+    .seg{
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+    }
+    .segBtn{
+      border:1px solid #d1d5db;background:#fff;color:#111;border-radius:999px;
+      padding:8px 12px;font-weight:900;font-size:12px;cursor:pointer;
+    }
+    .segBtn.active{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(124,58,237,.15);
+    }
+    .optBadge{
+      margin-left:8px;
+      font-size:11px;font-weight:900;
+      padding:3px 8px;border-radius:999px;
+      border:1px solid rgba(245,158,11,.35);
+      background:#fffbeb;color:#92400e;
+    }
+
+    .medList{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+    .medCard{
+      border:1px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff;
+      box-shadow: 0 6px 18px rgba(17,24,39,.06);
+    }
+    .medTop{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;
+    }
+    .medTop b{font-size:12px}
+    .medTop .miniBtns{display:flex;gap:8px}
+    .mini{
+      padding:6px 10px;border-radius:10px;border:1px solid #d1d5db;background:#fff;color:#111;font-weight:800;font-size:12px;cursor:pointer;
+    }
+    .mini:hover{border-color:#9ca3af}
+    .mini.remove{border-color:#fecaca;color:#991b1b;background:#fff5f5}
+    .hint{
+      font-size:12px;color:#4b5563;margin-top:6px;position:relative;z-index:1;
+    }
+
+    .statusBar{
+      display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;
+    }
+    .msg{
+      margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid #2a2f3a;background:rgba(255,255,255,.03);
+      color:#e5e7eb;font-size:13px;line-height:1.35;white-space:pre-line;
+    }
+    .msg.error{border-color:rgba(239,68,68,.35);color:#fecaca}
+    .msg.ok{border-color:rgba(16,185,129,.35);color:#a7f3d0}
+
+    /* impressão */
+    @media print{
+      body{background:#fff;color:#000}
+      header,.card,.toolbar,.note,.msg,.statusBar{display:none !important}
+      .wrap{max-width:none;padding:0}
+      .grid{grid-template-columns:1fr;gap:0}
+      .paperWrap{border:none;padding:0;box-shadow:none}
+      .paper{border-radius:0;min-height:auto}
+      .paper:before{opacity:.55}
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <h1>🦷 Simulador de Receituário (Cirurgia Odonto)</h1>
+      <small>Escolha um caso, selecione o modo (pré/pós/ambos) e preencha a simulação do receituário.</small>
+    </div>
+    <div class="toolbar">
+      <select id="caseSelect" aria-label="Selecionar caso"></select>
+      <button class="primary" id="btnValidate">Validar</button>
+      <button id="btnSave">Salvar</button>
+      <button id="btnLoad">Carregar</button>
+      <button class="ghost" id="btnPrint" title="Imprimir (ou salvar em PDF pelo navegador)">Imprimir</button>
+      <button class="danger" id="btnClear">Limpar</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- Coluna do caso -->
+    <section class="card">
+      <h2>📌 Caso clínico</h2>
+      <div class="caseBox" id="caseBox"></div>
+      <div class="statusBar" id="statusBar"></div>
+
+      <div class="note">
+        💡 O pré e o pós são <b>optativos</b> na plataforma: o aluno escolhe o que vai preencher.
+        Você pode cobrar depois na correção (ex.: “ok, mas aqui eu NÃO queria AINE por tal motivo”).
+      </div>
+      <div id="msgArea"></div>
+    </section>
+
+    <!-- Coluna do receituário -->
+    <section class="paperWrap">
+      <div class="paper" id="paper">
+        <div class="paperHeader">
+          <div class="logo" title="Logo fictício">RX</div>
+          <div class="clinic">
+            <p class="name">Clínica Escola de Cirurgia Odontológica</p>
+            <p class="sub">Simulação acadêmica • Não substitui prescrição real</p>
+          </div>
+          <div class="rxStamp">℞</div>
+        </div>
+
+        <div class="sectionTitle">Identificação</div>
+        <div class="row row3">
+          <div class="field">
+            <label>Paciente</label>
+            <input id="fPaciente" placeholder="Nome completo" />
+          </div>
+          <div class="field">
+            <label>Data</label>
+            <input id="fData" type="date" />
+          </div>
+          <div class="field">
+            <label>Idade</label>
+            <input id="fIdade" placeholder="Ex.: 58" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="field">
+            <label>Diagnóstico / Procedimento</label>
+            <input id="fDiag" placeholder="Ex.: Exodontia 16 + curetagem" />
+          </div>
+          <div class="field">
+            <label>Comorbidades / Alertas</label>
+            <input id="fAlertas" placeholder="Ex.: HAS, ARB+diurético, evitar AINE..." />
+          </div>
+        </div>
+
+        <div class="modeBar" aria-label="Seleção do modo de prescrição">
+          <div class="modeLeft">
+            Modo de prescrição
+            <span class="optBadge">OPTATIVO</span>
+          </div>
+          <div class="seg" role="group" aria-label="Selecionar pré/pós/ambos">
+            <button class="segBtn active" id="modePre" data-mode="pre" type="button">Pré</button>
+            <button class="segBtn" id="modePos" data-mode="pos" type="button">Pós</button>
+            <button class="segBtn" id="modeBoth" data-mode="both" type="button">Pré + Pós</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- PRE -->
+        <div id="panelPre">
+          <div class="sectionTitle">Prescrição Pré-operatória</div>
+          <div class="medList" id="preList"></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;position:relative;z-index:1;">
+            <button class="mini" id="addPre" type="button">+ Adicionar medicamento (pré)</button>
+          </div>
+          <div class="hint">Aqui entram “pontes” de dor, profilaxia quando indicada, ajustes por comorbidade, etc.</div>
+          <div class="divider"></div>
+        </div>
+
+        <!-- POS -->
+        <div id="panelPos" style="display:none;">
+          <div class="sectionTitle">Prescrição Pós-operatória</div>
+          <div class="medList" id="posList"></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;position:relative;z-index:1;">
+            <button class="mini" id="addPos" type="button">+ Adicionar medicamento (pós)</button>
+          </div>
+          <div class="hint">Aqui normalmente entram analgesia, anti-inflamatório se permitido e antibiótico se houver indicação.</div>
+          <div class="divider"></div>
+        </div>
+
+        <div class="sectionTitle">Orientações ao paciente</div>
+        <div class="field">
+          <textarea id="fOrients" placeholder="Ex.: compressa fria 24h, não cuspir/assoar, dieta pastosa, retorno em X dias..."></textarea>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="field">
+            <label>Aluno(a)</label>
+            <input id="fAluno" placeholder="Nome do aluno" />
+          </div>
+          <div class="field">
+            <label>Assinatura (simulada)</label>
+            <input id="fAss" placeholder="Assinatura ou matrícula" />
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // ===============================
+  // 1) CASOS
+  // ===============================
+  const CASES = [
+    {
+      id: 1,
+      titulo: "16 com risco de comunicação buco-sinusal + HAS descompensada",
+      paciente: "M, 58 anos",
+      achados: "16 com restauração grande, lesão periapical, raízes próximas ao seio maxilar.",
+      procedimento: "Exodontia cirúrgica 16 (retalho + possível odontosecção).",
+      historia: "HAS mal controlada; triagem: 170/105; ansiedade alta.",
+      meds: "Losartana 50mg 2x/dia + HCTZ 25mg/dia.",
+      alergias: "Nega.",
+      tags: ["HAS", "ARB+diurético", "cuidado AINE"]
+    },
+    {
+      id: 2,
+      titulo: "36 fraturado + abscesso agudo + DM2 e DRC estágio 3",
+      paciente: "F, 64 anos",
+      achados: "36 fratura extensa, supuração, trismo leve, dor intensa.",
+      procedimento: "Exodontia cirúrgica 36 + drenagem/curetagem.",
+      historia: "DM2 descompensada (HbA1c 9,2%); DRC TFG ~45.",
+      meds: "Metformina + empagliflozina; enalapril; furosemida.",
+      alergias: "Nega.",
+      tags: ["DM2", "DRC", "infecção"]
+    },
+    {
+      id: 3,
+      titulo: "Resto radicular 46 perto do forame mentual + varfarina + alergia dipirona",
+      paciente: "M, 71 anos",
+      achados: "Restos radiculares 46; Rx sugere proximidade com canal/forame mentual.",
+      procedimento: "Remoção cirúrgica com retalho + osteotomia cuidadosa.",
+      historia: "FA em varfarina; INR 2,8.",
+      meds: "Varfarina + carvedilol + omeprazol.",
+      alergias: "Dipirona (urticária).",
+      tags: ["anticoagulante", "sangramento", "AINE?"]
+    },
+    {
+      id: 4,
+      titulo: "12 com fístula + prótese valvar + alergia anafilática a amoxicilina",
+      paciente: "F, 45 anos",
+      achados: "Fístula em 12, lesão periapical grande.",
+      procedimento: "Exodontia 12 + curetagem.",
+      historia: "Prótese valvar mecânica.",
+      meds: "Varfarina + anti-hipertensivo.",
+      alergias: "Anafilaxia a amoxicilina.",
+      tags: ["profilaxia", "alergia penicilina", "valvopatia"]
+    },
+    {
+      id: 5,
+      titulo: "Extrações múltiplas 34/35/44/45 + stent recente (AAS+clopidogrel) + gastrite",
+      paciente: "M, 67 anos",
+      achados: "Cáries radiculares, mobilidade avançada, extrações em sessão única.",
+      procedimento: "Exodontias múltiplas com hemostasia caprichada.",
+      historia: "Stent há 10 meses; gastrite.",
+      meds: "AAS 100mg + clopidogrel 75mg; pantoprazol; atorvastatina.",
+      alergias: "Nega.",
+      tags: ["antiagregante", "gástrico", "AINE?"]
+    },
+    {
+      id: 6,
+      titulo: "24 + suspeita sinusite odontogênica + asma (sensibilidade a AINE)",
+      paciente: "F, 33 anos",
+      achados: "24 com lesão periapical, espessamento mucosa do seio.",
+      procedimento: "Exodontia 24 + curetagem.",
+      historia: "Asma; broncoespasmo com AINE prévio.",
+      meds: "Budesonida/formoterol; salbutamol SOS.",
+      alergias: "Provável reação a AINE.",
+      tags: ["asma", "evitar AINE", "sinusite"]
+    },
+    {
+      id: 7,
+      titulo: "31 e 41 com periodontite avançada + gestante 22 semanas",
+      paciente: "F, 29 anos",
+      achados: "Mobilidade grau 3 em 31/41, supuração leve.",
+      procedimento: "Exodontias atraumáticas 31 e 41.",
+      historia: "Gestação 2º trimestre sem intercorrências.",
+      meds: "Vitaminas pré-natais.",
+      alergias: "Nega.",
+      tags: ["gestação", "seleção de fármacos"]
+    },
+    {
+      id: 8,
+      titulo: "13 incluso palatino + epilepsia em carbamazepina",
+      paciente: "M, 19 anos",
+      achados: "Canino incluso palatino com indicação cirúrgica.",
+      procedimento: "Acesso palatino + retalho + osteotomia + exodontia.",
+      historia: "Epilepsia controlada.",
+      meds: "Carbamazepina.",
+      alergias: "Nega.",
+      tags: ["interações", "cirurgia difícil"]
+    },
+    {
+      id: 9,
+      titulo: "37 destruído + uso de alendronato oral há 5 anos (risco MRONJ)",
+      paciente: "F, 62 anos",
+      achados: "37 destruído, inflamação local, dor.",
+      procedimento: "Exodontia cirúrgica minimamente traumática + cuidados ósseos.",
+      historia: "Osteoporose; alendronato oral 5 anos.",
+      meds: "Alendronato semanal + cálcio/vit D.",
+      alergias: "Nega.",
+      tags: ["bisfosfonato", "antibiótico?", "cautela"]
+    },
+    {
+      id: 10,
+      titulo: "11 com fístula + hepatopatia/esteatose + gastrite erosiva (evitar AINE)",
+      paciente: "M, 52 anos",
+      achados: "Fístula vestibular, lesão periapical, reabsorção externa.",
+      procedimento: "Exodontia 11 + curetagem extensa.",
+      historia: "Esteatose/enzimas elevadas; gastrite erosiva, médico orientou evitar AINE.",
+      meds: "Losartana; omeprazol.",
+      alergias: "Nega.",
+      tags: ["evitar AINE", "atenção fígado"]
+    }
+  ];
+
+  // ===============================
+  // 2) Helpers
+  // ===============================
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    caseSelect: $("caseSelect"),
+    caseBox: $("caseBox"),
+    statusBar: $("statusBar"),
+    msgArea: $("msgArea"),
+
+    // campos topo
+    fPaciente: $("fPaciente"),
+    fData: $("fData"),
+    fIdade: $("fIdade"),
+    fDiag: $("fDiag"),
+    fAlertas: $("fAlertas"),
+
+    // modo
+    modePre: $("modePre"),
+    modePos: $("modePos"),
+    modeBoth: $("modeBoth"),
+    panelPre: $("panelPre"),
+    panelPos: $("panelPos"),
+
+    // listas
+    preList: $("preList"),
+    posList: $("posList"),
+    addPre: $("addPre"),
+    addPos: $("addPos"),
+
+    // outros
+    fOrients: $("fOrients"),
+    fAluno: $("fAluno"),
+    fAss: $("fAss"),
+
+    // botões
+    btnValidate: $("btnValidate"),
+    btnSave: $("btnSave"),
+    btnLoad: $("btnLoad"),
+    btnPrint: $("btnPrint"),
+    btnClear: $("btnClear"),
+  };
+
+  function setMsg(type, text){
+    els.msgArea.innerHTML = "";
+    if(!text) return;
+    const div = document.createElement("div");
+    div.className = "msg " + (type || "");
+    div.textContent = text;
+    els.msgArea.appendChild(div);
+  }
+
+  function pill(text, kind){
+    const s = document.createElement("span");
+    s.className = "pill " + (kind || "");
+    s.textContent = text;
+    return s;
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[s]));
+  }
+
+  function getSelectedCase(){
+    const id = parseInt(els.caseSelect.value, 10);
+    return CASES.find(c => c.id === id) || CASES[0];
+  }
+
+  function renderCase(caseObj){
+    els.caseBox.innerHTML = "";
+
+    const blocks = [
+      ["Caso", caseObj.titulo],
+      ["Paciente", caseObj.paciente],
+      ["Achados", caseObj.achados],
+      ["Procedimento", caseObj.procedimento],
+      ["História médica", caseObj.historia],
+      ["Medicações", caseObj.meds],
+      ["Alergias", caseObj.alergias],
+    ];
+
+    blocks.forEach(([k,v])=>{
+      const div = document.createElement("div");
+      div.className = "caseItem";
+      div.innerHTML = `<b>${k}:</b> <span class="muted">${escapeHtml(v)}</span>`;
+      els.caseBox.appendChild(div);
+    });
+
+    els.statusBar.innerHTML = "";
+    (caseObj.tags || []).forEach(t => els.statusBar.appendChild(pill(t, "warn")));
+
+    // preencher topo (padrão)
+    const idade = (caseObj.paciente.match(/(\d+)\s*anos/i)||[])[1] || "";
+    els.fPaciente.value = caseObj.paciente.replace(/\s*,\s*\d+\s*anos/i,"").trim();
+    els.fIdade.value = idade;
+    els.fDiag.value = caseObj.procedimento;
+    els.fAlertas.value = (caseObj.tags || []).join(", ");
+
+    setMsg("", "");
+  }
+
+  // ===============================
+  // 3) Seleção do modo (Pré/Pós/Ambos)
+  // ===============================
+  let mode = "pre"; // pre | pos | both
+
+  function setMode(newMode){
+    mode = newMode;
+
+    [els.modePre, els.modePos, els.modeBoth].forEach(b => b.classList.remove("active"));
+    if(mode === "pre") els.modePre.classList.add("active");
+    if(mode === "pos") els.modePos.classList.add("active");
+    if(mode === "both") els.modeBoth.classList.add("active");
+
+    if(mode === "pre"){
+      els.panelPre.style.display = "";
+      els.panelPos.style.display = "none";
+    } else if(mode === "pos"){
+      els.panelPre.style.display = "none";
+      els.panelPos.style.display = "";
+    } else {
+      els.panelPre.style.display = "";
+      els.panelPos.style.display = "";
+    }
+  }
+
+  // ===============================
+  // 4) Medicamentos dinâmicos
+  // ===============================
+  const CLASSES = [
+    {v:"antiinflamatorio", t:"Anti-inflamatório (AINE/corticoide)"},
+    {v:"analgesico", t:"Analgésico"},
+    {v:"antibiotico", t:"Antibiótico"},
+    {v:"outros", t:"Outros"}
+  ];
+
+  function medTemplate(prefix, idx){
+    const idBase = `${prefix}_${idx}`;
+    const div = document.createElement("div");
+    div.className = "medCard";
+    div.dataset.prefix = prefix;
+    div.dataset.idx = idx;
+
+    div.innerHTML = `
+      <div class="medTop">
+        <b>Medicamento ${idx+1}</b>
+        <div class="miniBtns">
+          <button class="mini remove" type="button">Remover</button>
+        </div>
+      </div>
+      <div class="row row3">
+        <div class="field">
+          <label>Classe</label>
+          <select id="${idBase}_classe">
+            ${CLASSES.map(c=>`<option value="${c.v}">${c.t}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label>Fármaco (nome genérico)</label>
+          <input id="${idBase}_farmaco" placeholder="Ex.: ibuprofeno / paracetamol / amoxicilina..." />
+        </div>
+        <div class="field">
+          <label>Forma / Concentração</label>
+          <input id="${idBase}_forma" placeholder="Ex.: comprimido 500 mg, cápsula 250 mg, suspensão..." />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Posologia</label>
+          <input id="${idBase}_poso" placeholder="Ex.: 1 comp VO 8/8h por 3 dias" />
+        </div>
+        <div class="field">
+          <label>Quantidade (qtd a dispensar)</label>
+          <input id="${idBase}_qtd" placeholder="Ex.: 12 comprimidos" />
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:10px;">
+        <label>Orientações específicas</label>
+        <textarea id="${idBase}_obs" placeholder="Ex.: tomar após alimentação, evitar álcool, sinais de alerta, etc."></textarea>
+      </div>
+    `;
+
+    div.querySelector(".mini.remove").addEventListener("click", () => {
+      div.remove();
+      renumber(prefix);
+    });
+
+    return div;
+  }
+
+  function addMed(prefix){
+    const list = prefix === "pre" ? els.preList : els.posList;
+    const idx = list.querySelectorAll(".medCard").length;
+    list.appendChild(medTemplate(prefix, idx));
+  }
+
+  function getMedValues(prefix, idx){
+    const idBase = `${prefix}_${idx}`;
+    const val = (id) => (document.getElementById(id)?.value || "").trim();
+    return {
+      classe: val(`${idBase}_classe`),
+      farmaco: val(`${idBase}_farmaco`),
+      forma: val(`${idBase}_forma`),
+      poso: val(`${idBase}_poso`),
+      qtd: val(`${idBase}_qtd`),
+      obs: val(`${idBase}_obs`)
+    };
+  }
+
+  function setMedValues(prefix, idx, m){
+    const idBase = `${prefix}_${idx}`;
+    const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v ?? ""; };
+    set(`${idBase}_classe`, m.classe || "outros");
+    set(`${idBase}_farmaco`, m.farmaco || "");
+    set(`${idBase}_forma`, m.forma || "");
+    set(`${idBase}_poso`, m.poso || "");
+    set(`${idBase}_qtd`, m.qtd || "");
+    set(`${idBase}_obs`, m.obs || "");
+  }
+
+  function collectMeds(prefix){
+    const list = prefix === "pre" ? els.preList : els.posList;
+    const cards = Array.from(list.querySelectorAll(".medCard"));
+    return cards.map((_, i)=>getMedValues(prefix, i));
+  }
+
+  function renumber(prefix){
+    const list = prefix === "pre" ? els.preList : els.posList;
+    const snapshot = collectMeds(prefix);
+    list.innerHTML = "";
+    snapshot.forEach((m, i)=>{
+      const card = medTemplate(prefix, i);
+      list.appendChild(card);
+      setMedValues(prefix, i, m);
+    });
+  }
+
+  // ===============================
+  // 5) Validação (cobra só o modo selecionado)
+  // ===============================
+  function validateAll(){
+    const errors = [];
+
+    if(!els.fPaciente.value.trim()) errors.push("Paciente: faltou nome.");
+    if(!els.fData.value) errors.push("Data: preenche aí, nem que seja hoje.");
+    if(!els.fDiag.value.trim()) errors.push("Diagnóstico/Procedimento: faltou.");
+    if(!els.fAluno.value.trim()) errors.push("Aluno(a): faltou.");
+    if(!els.fAss.value.trim()) errors.push("Assinatura simulada: faltou.");
+
+    const preMeds = collectMeds("pre");
+    const posMeds = collectMeds("pos");
+
+    const hasAnyFilled = (meds) => meds.some(m => m.farmaco || m.poso || m.forma || m.qtd || m.obs);
+
+    // exige preenchimento apenas do(s) painel(is) selecionado(s)
+    if(mode === "pre" && !hasAnyFilled(preMeds)) errors.push("Você selecionou PRÉ, mas a prescrição pré-operatória está vazia.");
+    if(mode === "pos" && !hasAnyFilled(posMeds)) errors.push("Você selecionou PÓS, mas a prescrição pós-operatória está vazia.");
+    if(mode === "both"){
+      if(!hasAnyFilled(preMeds)) errors.push("Você selecionou PRÉ + PÓS, mas o PRÉ está vazio.");
+      if(!hasAnyFilled(posMeds)) errors.push("Você selecionou PRÉ + PÓS, mas o PÓS está vazio.");
+    }
+
+    // valida cards preenchidos: se começou a preencher um med, exige os campos principais
+    function checkMed(prefix, meds){
+      meds.forEach((m, i)=>{
+        const filled = (m.farmaco || m.poso || m.forma || m.qtd || m.obs);
+        if(!filled) return;
+        if(!m.farmaco) errors.push(`${prefix.toUpperCase()} med ${i+1}: faltou o fármaco (nome genérico).`);
+        if(!m.forma) errors.push(`${prefix.toUpperCase()} med ${i+1}: faltou forma/concentração.`);
+        if(!m.poso) errors.push(`${prefix.toUpperCase()} med ${i+1}: faltou posologia.`);
+        if(!m.qtd) errors.push(`${prefix.toUpperCase()} med ${i+1}: faltou quantidade a dispensar.`);
+      });
+    }
+
+    // checa apenas os painéis que importam no modo atual
+    if(mode === "pre") checkMed("pre", preMeds);
+    if(mode === "pos") checkMed("pos", posMeds);
+    if(mode === "both"){
+      checkMed("pre", preMeds);
+      checkMed("pos", posMeds);
+    }
+
+    if(errors.length){
+      setMsg("error", "⚠️ Encontrado(s) problema(s):\n• " + errors.join("\n• "));
+      return false;
+    }
+
+    setMsg("ok", "✅ Forma ok. Agora vem a parte divertida: você corrigir se a indicação/contraindicação faz sentido no caso 😄");
+    return true;
+  }
+
+  // ===============================
+  // 6) Save/Load (localStorage)
+  // ===============================
+  const STORAGE_KEY = "sim_rx_odonto_v2";
+
+  function snapshot(){
+    return {
+      caseId: parseInt(els.caseSelect.value, 10),
+      mode,
+      topo: {
+        paciente: els.fPaciente.value,
+        data: els.fData.value,
+        idade: els.fIdade.value,
+        diag: els.fDiag.value,
+        alertas: els.fAlertas.value
+      },
+      pre: collectMeds("pre"),
+      pos: collectMeds("pos"),
+      orients: els.fOrients.value,
+      aluno: els.fAluno.value,
+      ass: els.fAss.value
+    };
+  }
+
+  function applySnapshot(s){
+    if(!s) return;
+
+    if(s.caseId){
+      els.caseSelect.value = String(s.caseId);
+      renderCase(getSelectedCase());
+    }
+
+    setMode(s.mode || "pre");
+
+    els.fPaciente.value = s.topo?.paciente ?? els.fPaciente.value;
+    els.fData.value = s.topo?.data ?? els.fData.value;
+    els.fIdade.value = s.topo?.idade ?? els.fIdade.value;
+    els.fDiag.value = s.topo?.diag ?? els.fDiag.value;
+    els.fAlertas.value = s.topo?.alertas ?? els.fAlertas.value;
+
+    // meds
+    els.preList.innerHTML = "";
+    (s.pre || []).forEach((m, i)=>{
+      els.preList.appendChild(medTemplate("pre", i));
+      setMedValues("pre", i, m);
+    });
+
+    els.posList.innerHTML = "";
+    (s.pos || []).forEach((m, i)=>{
+      els.posList.appendChild(medTemplate("pos", i));
+      setMedValues("pos", i, m);
+    });
+
+    // garante pelo menos 1 card em cada lista pra não ficar "vazio demais"
+    if(!els.preList.querySelector(".medCard")) addMed("pre");
+    if(!els.posList.querySelector(".medCard")) addMed("pos");
+
+    els.fOrients.value = s.orients ?? "";
+    els.fAluno.value = s.aluno ?? "";
+    els.fAss.value = s.ass ?? "";
+  }
+
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot()));
+    setMsg("ok", "💾 Salvo no navegador (incluindo o modo: pré/pós/ambos).");
+  }
+
+  function load(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){
+      setMsg("error", "Não achei nada salvo ainda. Clique em Salvar primeiro 🙂");
+      return;
+    }
+    applySnapshot(JSON.parse(raw));
+    setMsg("ok", "📦 Carregado.");
+  }
+
+  function clearAll(){
+    if(confirm("Quer limpar tudo mesmo? Isso zera o receituário e as prescrições.")){
+      localStorage.removeItem(STORAGE_KEY);
+
+      const caseId = parseInt(els.caseSelect.value, 10);
+
+      ["fPaciente","fData","fIdade","fDiag","fAlertas","fOrients","fAluno","fAss"].forEach(id => $(id).value = "");
+
+      els.preList.innerHTML = "";
+      els.posList.innerHTML = "";
+      addMed("pre");
+      addMed("pos");
+
+      renderCase(CASES.find(c=>c.id===caseId) || CASES[0]);
+      els.fData.valueAsDate = new Date();
+
+      setMode("pre");
+      setMsg("", "");
+    }
+  }
+
+  // ===============================
+  // 7) init
+  // ===============================
+  function init(){
+    els.caseSelect.innerHTML = CASES.map(c => `<option value="${c.id}">Caso ${c.id}: ${escapeHtml(c.titulo)}</option>`).join("");
+    els.caseSelect.value = "1";
+
+    els.caseSelect.addEventListener("change", ()=>{
+      renderCase(getSelectedCase());
+      if(!els.preList.querySelector(".medCard")) addMed("pre");
+      if(!els.posList.querySelector(".medCard")) addMed("pos");
+    });
+
+    // modo
+    [els.modePre, els.modePos, els.modeBoth].forEach(btn=>{
+      btn.addEventListener("click", ()=>setMode(btn.dataset.mode));
+    });
+
+    // meds
+    els.addPre.addEventListener("click", ()=>addMed("pre"));
+    els.addPos.addEventListener("click", ()=>addMed("pos"));
+
+    // botões
+    els.btnValidate.addEventListener("click", validateAll);
+    els.btnSave.addEventListener("click", save);
+    els.btnLoad.addEventListener("click", load);
+    els.btnPrint.addEventListener("click", ()=>window.print());
+    els.btnClear.addEventListener("click", clearAll);
+
+    // data default
+    els.fData.valueAsDate = new Date();
+
+    // render inicial
+    renderCase(getSelectedCase());
+
+    // 1 med por seção
+    addMed("pre");
+    addMed("pos");
+
+    // modo default
+    setMode("pre");
+  }
+
+  init();
+</script>
+</body>
+</html>
