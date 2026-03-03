@@ -3,16 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Simulador de Receituário (Modelo)</title>
+  <title>Simulador de Receituário (Cruzeiro do Sul)</title>
 
-  <!-- jsPDF (gera o PDF diretamente, sem “print”) -->
+  <!-- jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     :root{
       --bg:#0b0c10;
-      --ink:#e9edf6;
+      --ink:#eef2ff;
       --muted:#a7b0c3;
+      --stroke:rgba(255,255,255,.10);
+      --glass:rgba(255,255,255,.06);
+      --glass2:rgba(255,255,255,.03);
+      --brand1: rgba(245,158,11,.95);
+      --brand2: rgba(37,99,235,.90);
       --paper:#ffffff;
       --paperInk:#111;
     }
@@ -21,47 +26,49 @@
     body{
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
-      background: radial-gradient(1200px 700px at 20% -10%, rgba(124,58,237,.25), transparent 60%),
-                  radial-gradient(900px 600px at 110% 20%, rgba(59,130,246,.18), transparent 55%),
-                  var(--bg);
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(245,158,11,.14), transparent 60%),
+        radial-gradient(900px 600px at 110% 20%, rgba(37,99,235,.18), transparent 55%),
+        radial-gradient(900px 600px at 20% 110%, rgba(124,58,237,.12), transparent 60%),
+        var(--bg);
       color:var(--ink);
     }
 
-    .wrap{max-width:1100px; margin:0 auto; padding:24px;}
+    .wrap{max-width:1120px; margin:0 auto; padding:24px;}
     .top{display:flex; gap:16px; align-items:flex-start; justify-content:space-between; margin-bottom:16px;}
-    .brand{display:flex; gap:12px; align-items:center;}
-    .logoBadge{
-      width:44px; height:44px; border-radius:12px;
-      background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(59,130,246,.75));
+    .brand{display:flex; gap:14px; align-items:center;}
+
+    .logoWrap{
+      width:56px; height:56px; border-radius:18px;
+      background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
       display:grid; place-items:center;
-      box-shadow: 0 12px 30px rgba(0,0,0,.35);
-      user-select:none;
+      overflow:hidden;
     }
-    .logoBadge span{font-weight:800; letter-spacing:.5px; font-size:14px;}
+    .logoWrap img{width:88%; height:auto; display:block; filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));}
     h1{margin:0; font-size:18px; line-height:1.2;}
-    .sub{margin:4px 0 0 0; color:var(--muted); font-size:13px; max-width:660px;}
+    .sub{margin:4px 0 0 0; color:#a7b0c3; font-size:13px; max-width:700px; line-height:1.35;}
 
     .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
     .btn{
       border:1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.06);
-      color:var(--ink);
+      color:#eef2ff;
       padding:10px 12px;
-      border-radius:12px;
+      border-radius:14px;
       cursor:pointer;
-      font-weight:700;
+      font-weight:800;
       letter-spacing:.2px;
       transition: transform .05s ease, background .15s ease, border-color .15s ease;
       user-select:none;
       display:inline-flex; gap:8px; align-items:center;
       white-space:nowrap;
+      box-shadow: 0 10px 26px rgba(0,0,0,.18);
     }
     .btn:hover{background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.16);}
     .btn:active{transform: translateY(1px);}
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(59,130,246,.85));
-      border-color: rgba(255,255,255,.14);
-    }
+    .btn.primary{background: linear-gradient(135deg, rgba(245,158,11,.95), rgba(37,99,235,.90)); border-color: rgba(255,255,255,.16);}
 
     .grid{display:grid; grid-template-columns: 1.05fr .95fr; gap:14px;}
     @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }
@@ -69,103 +76,55 @@
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
       border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
+      border-radius:20px;
       padding:14px;
-      box-shadow: 0 14px 35px rgba(0,0,0,.25);
+      box-shadow: 0 18px 45px rgba(0,0,0,.28);
+      backdrop-filter: blur(10px);
     }
     .card h2{margin:0 0 10px 0; font-size:14px; letter-spacing:.2px;}
     .row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
     @media (max-width: 600px){ .row{grid-template-columns:1fr;} }
 
-    label{display:block; font-size:12px; color:var(--muted); margin:8px 0 6px;}
-    input, textarea{
+    label{display:block; font-size:12px; color:#a7b0c3; margin:8px 0 6px;}
+    input, textarea, select{
       width:100%;
       padding:10px 11px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
       background: rgba(0,0,0,.22);
-      color: var(--ink);
+      color:#eef2ff;
       outline: none;
     }
+    input:focus, textarea:focus, select:focus{border-color: rgba(245,158,11,.45);}
     textarea{min-height:82px; resize:vertical;}
-    input::placeholder, textarea::placeholder{color: rgba(167,176,195,.65);}
-
-    .seg{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;}
-    .pill{
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      padding:8px 10px;
-      border-radius:999px;
-      cursor:pointer;
-      user-select:none;
-      font-weight:700;
-      font-size:12px;
-    }
-    .pill input{display:none}
-    .pill.active{background: rgba(124,58,237,.25); border-color: rgba(124,58,237,.55);}
 
     .medList{display:flex; flex-direction:column; gap:10px;}
-    .medItem{
-      background: rgba(0,0,0,.18);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:16px;
-      padding:12px;
-    }
+    .medItem{background: rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:18px; padding:12px;}
     .medTop{display:flex; gap:10px; align-items:center; justify-content:space-between;}
-    .medIdx{
-      font-weight:900;
-      background: rgba(255,255,255,.07);
-      border:1px solid rgba(255,255,255,.10);
-      width:34px; height:34px; border-radius:12px;
-      display:grid; place-items:center;
-      flex: 0 0 auto;
-    }
-    .medRemove{
-      border:none;
-      background: rgba(239,68,68,.14);
-      color: rgba(255,255,255,.92);
-      padding:8px 10px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:800;
-    }
+    .medIdx{font-weight:900; background: rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.10); width:34px; height:34px; border-radius:12px; display:grid; place-items:center;}
+    .medRemove{border:none; background: rgba(239,68,68,.14); color: rgba(255,255,255,.92); padding:8px 10px; border-radius:12px; cursor:pointer; font-weight:900;}
     .medRemove:hover{background: rgba(239,68,68,.18);}
-    .mutedSmall{font-size:12px; color:var(--muted); margin-top:10px; line-height:1.35;}
+    .mutedSmall{font-size:12px; color:#a7b0c3; margin-top:10px; line-height:1.35;}
     .addRow{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
-    .btnAdd{
-      border:1px dashed rgba(255,255,255,.18);
-      background: rgba(255,255,255,.04);
-      padding:10px 12px;
-      border-radius:14px;
-      cursor:pointer;
-      font-weight:800;
-      color: var(--ink);
-    }
+    .btnAdd{border:1px dashed rgba(255,255,255,.18); background: rgba(255,255,255,.04); padding:10px 12px; border-radius:14px; cursor:pointer; font-weight:900; color:#eef2ff;}
     .btnAdd:hover{background: rgba(255,255,255,.07);}
 
-    /* Preview (abre em outra aba) */
-    .paper{
-      width: 210mm;
-      min-height: 297mm;
-      background: var(--paper);
-      color: var(--paperInk);
-      margin: 0 auto;
-      padding: 16mm 18mm 14mm 18mm;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+    /* Preview “papel” */
+    .paper{width: 210mm; min-height: 297mm; background: #fff; color:#111; margin: 0 auto; padding: 14mm 18mm 14mm 18mm; font-family: Arial, Helvetica, sans-serif;}
     .pageBreak{page-break-after: always;}
+    .rxHeader{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8mm;}
+    .rxLogo{width:62mm; height:auto;}
     .rxTopRight{font-weight:700; font-size:12px; text-align:right; margin-top:2mm;}
-    .rxTitle{font-size:22px; font-weight:700; text-align:center; margin:22mm 0 10mm;}
-    .rxPatient{font-size:14px; line-height:1.35; margin:0 0 12mm 0;}
+    .rxTitle{font-size:22px; font-weight:700; text-align:center; margin:10mm 0 10mm;}
+    .rxPatient{font-size:14px; line-height:1.35; margin:0 0 10mm 0;}
     .rxUso{color:#666; font-size:14px; margin:0 0 6mm 0;}
-    .rxMed{margin:0 0 10mm 0;}
+    .rxMed{margin:0 0 9mm 0;}
     .rxMedLine{display:flex; gap:10px; justify-content:space-between; align-items:flex-end; font-size:16px; font-weight:700;}
     .rxMedQty{font-weight:400;}
     .rxPos{font-size:16px; margin:6mm 0 0 0; line-height:1.25;}
-    .rxSignLine{border-top:1px solid #111; margin:30mm 0 6mm;}
+    .rxSignLine{border-top:1px solid #111; margin:26mm 0 6mm;}
     .rxSigner{font-size:16px; text-align:center;}
     .rxDate{font-size:16px; text-align:center; margin-top:2mm;}
-
     .rxBox{margin-top:10mm; border:1px solid #111;}
     .rxBoxHead{display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #111; font-weight:700; text-align:center; padding:6px 0;}
     .rxBoxBody{display:grid; grid-template-columns:1fr 1fr; min-height:46mm;}
@@ -183,10 +142,12 @@
   <div class="wrap">
     <div class="top">
       <div class="brand">
-        <div class="logoBadge" title="UNICSUL"><span>UNI</span></div>
+        <div class="logoWrap" title="Universidade Cruzeiro do Sul">
+          <img src="https://logospng.org/download/cruzeiro-do-sul/logo-cruzeiro-do-sul-4096.png" alt="Logo Universidade Cruzeiro do Sul" />
+        </div>
         <div>
-          <h1>Simulador de Receituário (modelo igual ao anexo)</h1>
-          <p class="sub">Aqui só tem <b>Visualizar</b> e <b>Salvar PDF</b>. Nada de Validar/Salvar/rascunho.</p>
+          <h1>Simulador de Receituário (Cruzeiro do Sul)</h1>
+          <p class="sub">Somente <b>Visualizar</b> e <b>Salvar PDF</b>. O receituário abre igual ao modelo e preenche com o que o aluno digitar.</p>
         </div>
       </div>
 
@@ -201,32 +162,54 @@
         <h2>Dados do paciente</h2>
 
         <label for="paciente">Nome do paciente</label>
-        <input id="paciente" placeholder="Ex.: Bianca Imperio" />
+        <input id="paciente" autocomplete="off" />
 
         <label for="end1">Endereço (linha 1)</label>
-        <input id="end1" placeholder="Ex.: Avenida Capuava, 100" />
+        <input id="end1" autocomplete="off" />
 
         <label for="end2">Endereço (linha 2)</label>
-        <input id="end2" placeholder="Ex.: Vila Homero Thon - Santo André - SP, 09111-000" />
+        <input id="end2" autocomplete="off" />
 
-        <label>Uso</label>
-        <div class="seg" id="usoSeg">
-          <label class="pill active"><input type="radio" name="uso" value="Uso Interno" checked>Uso Interno</label>
-          <label class="pill"><input type="radio" name="uso" value="Uso Externo">Uso Externo</label>
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <label for="usoSelect">Uso</label>
+            <select id="usoSelect">
+              <option value="Uso Interno">Uso Interno</option>
+              <option value="Uso Externo">Uso Externo</option>
+              <option value="Uso Colutório">Uso Colutório</option>
+              <option value="Uso Tópico">Uso Tópico</option>
+              <option value="Uso Sublingual">Uso Sublingual</option>
+              <option value="Uso Intranasal">Uso Intranasal</option>
+              <option value="Uso Inalatório">Uso Inalatório</option>
+              <option value="Uso Oftálmico">Uso Oftálmico</option>
+              <option value="Uso Otológico">Uso Otológico</option>
+              <option value="Uso Retal">Uso Retal</option>
+              <option value="Uso Vaginal">Uso Vaginal</option>
+              <option value="Uso Intramuscular">Uso Intramuscular</option>
+              <option value="Uso Intravenoso">Uso Intravenoso</option>
+              <option value="Uso Subcutâneo">Uso Subcutâneo</option>
+              <option value="Uso Intradérmico">Uso Intradérmico</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label for="usoOutro">Se “Outro”, descreva</label>
+            <input id="usoOutro" autocomplete="off" />
+          </div>
         </div>
 
         <div class="row" style="margin-top:10px;">
           <div>
             <label for="assinatura">Assinatura (nome do aluno)</label>
-            <input id="assinatura" placeholder="Ex.: Fernando Henrique Martins" />
+            <input id="assinatura" autocomplete="off" />
           </div>
           <div>
             <label for="data">Data</label>
-            <input id="data" placeholder="dd/mm/aaaa" />
+            <input id="data" placeholder="dd/mm/aaaa" autocomplete="off" />
           </div>
         </div>
 
-        <p class="mutedSmall">A posologia sai do jeito que o aluno escreve (sem eu abreviar nada).</p>
+        <p class="mutedSmall">A posologia sai exatamente como foi escrita. Sem “corrigir”, sem abreviar.</p>
       </div>
 
       <div class="card">
@@ -242,6 +225,8 @@
   </div>
 
   <script>
+    const LOGO_URL = "https://logospng.org/download/cruzeiro-do-sul/logo-cruzeiro-do-sul-4096.png";
+
     function pad2(n){ return String(n).padStart(2,'0'); }
     function todayBR(){
       const d = new Date();
@@ -266,7 +251,7 @@
           <div class="medTop">
             <div style="display:flex; gap:10px; align-items:center;">
               <div class="medIdx">${idx+1}</div>
-              <div style="font-weight:800">Medicamento ${idx+1}</div>
+              <div style="font-weight:900">Medicamento ${idx+1}</div>
             </div>
             <button class="medRemove" type="button">Remover</button>
           </div>
@@ -274,16 +259,16 @@
           <div class="row" style="margin-top:10px;">
             <div>
               <label>Nome (com concentração)</label>
-              <input placeholder="Ex.: Amoxicilina 500mg" value="${escapeHtml(m.nome)}" />
+              <input value="${escapeHtml(m.nome)}" autocomplete="off" />
             </div>
             <div>
               <label>Quantidade</label>
-              <input placeholder="Ex.: 21 cápsulas" value="${escapeHtml(m.quantidade)}" />
+              <input value="${escapeHtml(m.quantidade)}" autocomplete="off" />
             </div>
           </div>
 
           <label style="margin-top:10px;">Posologia</label>
-          <textarea placeholder="Ex.: Tomar 01 cápsula a cada 08 horas por 07 dias">${escapeHtml(m.posologia)}</textarea>
+          <textarea autocomplete="off">${escapeHtml(m.posologia)}</textarea>
         `;
 
         const inputs = wrap.querySelectorAll('input');
@@ -303,15 +288,6 @@
       });
     }
 
-    const usoSeg = document.getElementById('usoSeg');
-    usoSeg.addEventListener('click', (ev) => {
-      const pill = ev.target.closest('.pill');
-      if(!pill) return;
-      usoSeg.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      pill.querySelector('input').checked = true;
-    });
-
     document.getElementById('data').value = todayBR();
     meds.push(makeMed()); meds.push(makeMed()); meds.push(makeMed());
     renderMeds();
@@ -326,7 +302,11 @@
       const paciente = document.getElementById('paciente').value.trim();
       const end1 = document.getElementById('end1').value.trim();
       const end2 = document.getElementById('end2').value.trim();
-      const uso = document.querySelector('input[name="uso"]:checked')?.value || 'Uso Interno';
+
+      const usoSel = document.getElementById('usoSelect').value;
+      const usoOutro = document.getElementById('usoOutro').value.trim();
+      const uso = (usoSel === 'Outro' && usoOutro) ? usoOutro : usoSel;
+
       const assinatura = document.getElementById('assinatura').value.trim();
       const data = document.getElementById('data').value.trim() || todayBR();
 
@@ -352,7 +332,11 @@
 
         return `
           <div class="paper ${label === '1ª VIA FARMÁCIA' ? 'pageBreak' : ''}">
-            <div class="rxTopRight">${label}</div>
+            <div class="rxHeader">
+              <img class="rxLogo" src="${LOGO_URL}" alt="Logo Universidade Cruzeiro do Sul" />
+              <div class="rxTopRight">${label}</div>
+            </div>
+
             <div class="rxTitle">Receituário controle especial</div>
 
             <div class="rxPatient">
@@ -428,6 +412,41 @@
       openPreview(collectData());
     });
 
+    // ===== PDF com logo =====
+    let _logoCache = null;
+
+    function blobToDataURL(blob){
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function loadLogo(){
+      if(_logoCache) return _logoCache;
+      try{
+        const res = await fetch(LOGO_URL, { mode:'cors' });
+        const blob = await res.blob();
+        const dataUrl = await blobToDataURL(blob);
+
+        const img = new Image();
+        img.src = dataUrl;
+        if(img.decode) {
+          try { await img.decode(); } catch { /* ok */ }
+        } else {
+          await new Promise(r => img.onload = r);
+        }
+
+        _logoCache = { dataUrl, w: img.naturalWidth || 1000, h: img.naturalHeight || 300 };
+        return _logoCache;
+      }catch(e){
+        _logoCache = null;
+        return null;
+      }
+    }
+
     function drawBottomBox(doc, x, y, w, h){
       doc.rect(x, y, w, h);
       const headH = 10;
@@ -485,21 +504,30 @@
       return y + (lines.length * lineHeight);
     }
 
-    function drawOnePage(doc, payload, viaLabel){
+    function drawOnePage(doc, payload, viaLabel, logo){
       const pageW = doc.internal.pageSize.getWidth();
       const rightX = pageW - 22;
       const marginX = 22;
-      let y = 18;
 
       doc.setFont('helvetica','bold');
       doc.setFontSize(12);
-      doc.text(viaLabel, rightX, y, {align:'right'});
+      doc.text(viaLabel, rightX, 16, {align:'right'});
 
-      y = 68;
+      if(logo && logo.dataUrl){
+        const desiredW = 62;
+        const desiredH = desiredW * (logo.h / logo.w);
+        doc.addImage(logo.dataUrl, 'PNG', marginX, 10, desiredW, desiredH);
+      } else {
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(14);
+        doc.text('Universidade Cruzeiro do Sul', marginX, 18);
+      }
+
+      doc.setFont('helvetica','bold');
       doc.setFontSize(22);
-      doc.text('Receituário controle especial', pageW/2, y, {align:'center'});
+      doc.text('Receituário controle especial', pageW/2, 68, {align:'center'});
 
-      y = 86;
+      let y = 86;
       doc.setFont('helvetica','normal');
       doc.setFontSize(14);
       doc.text(`Paciente: ${payload.paciente || ''}`, marginX, y);
@@ -513,11 +541,10 @@
       doc.setTextColor(0);
 
       y += 12;
-
       const medsLocal = payload.meds.length ? payload.meds : [{nome:'', quantidade:'', posologia:''}];
 
       for(const m of medsLocal){
-        if(y > 178) break; // evita invadir assinatura/caixa
+        if(y > 178) break;
         doc.setFont('helvetica','bold');
         doc.setFontSize(15);
         doc.text(((m.nome || ' ').trim() || ' '), marginX, y);
@@ -551,11 +578,16 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({orientation:'p', unit:'mm', format:'a4'});
 
-      drawOnePage(doc, payload, '1ª VIA FARMÁCIA');
+      const logo = await loadLogo();
+      drawOnePage(doc, payload, '1ª VIA FARMÁCIA', logo);
       doc.addPage();
-      drawOnePage(doc, payload, '2ª VIA PACIENTE');
+      drawOnePage(doc, payload, '2ª VIA PACIENTE', logo);
 
-      const safeName = (payload.paciente || 'paciente').replace(/[^a-zA-Z0-9 _-]/g,'').trim().replace(/\s+/g,'_');
+      const safeName = (payload.paciente || 'paciente')
+        .replace(/[^a-zA-Z0-9 _-]/g,'')
+        .trim()
+        .replace(/\s+/g,'_');
+
       doc.save(`receituario_${safeName || 'paciente'}.pdf`);
     }
 
