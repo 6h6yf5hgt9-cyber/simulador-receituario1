@@ -1,4 +1,49 @@
-<!doctype html>
+<!doctype html
+    // ===== Casos clínicos (lado esquerdo) =====
+    const caseSelectEl = document.getElementById('caseSelect');
+    const caseTitleEl  = document.getElementById('caseTitle');
+    const caseBodyEl   = document.getElementById('caseBody');
+    const btnCopyCase  = document.getElementById('btnCopyCase');
+
+    function pad2str(n){ return String(n).padStart(2,'0'); }
+
+    function renderCase(num){
+      const c = CASES.find(x => x.num === num) || CASES[0];
+      if(!c) return;
+
+      caseTitleEl.textContent = `${pad2str(c.num)} - ${c.name}`;
+      caseBodyEl.innerHTML = formatCaseHTML(c.raw);
+      caseSelectEl.value = String(c.num);
+    }
+
+    // Popula o seletor
+    CASES.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = String(c.num);
+      opt.textContent = `${pad2str(c.num)} - ${c.name}`;
+      caseSelectEl.appendChild(opt);
+    });
+
+    caseSelectEl.addEventListener('change', () => {
+      renderCase(Number(caseSelectEl.value));
+    });
+
+    btnCopyCase.addEventListener('click', async () => {
+      const c = CASES.find(x => x.num === Number(caseSelectEl.value)) || CASES[0];
+      const txt = `Caso clínico ${pad2str(c.num)} - ${c.name}\n\n${c.raw}`;
+      try{
+        await navigator.clipboard.writeText(txt);
+        btnCopyCase.textContent = '✅ Copiado';
+        setTimeout(() => btnCopyCase.textContent = '📋 Copiar', 1200);
+      }catch(e){
+        alert('Não consegui copiar automaticamente. Selecione o texto e copie manualmente.');
+      }
+    });
+
+    // Caso inicial
+    renderCase(1);
+
+>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
@@ -242,7 +287,86 @@
       }
     }
 
-  </style>
+  
+
+    /* ===== Casos clínicos (layout novo, não afeta o PDF) ===== */
+    .rightCol{display:flex; flex-direction:column; gap:14px;}
+    .caseCard{display:flex; flex-direction:column; min-height: 560px;}
+    .caseTop{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;}
+    .btnTiny{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color:#eef2ff;
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:12px;
+      user-select:none;
+      box-shadow: 0 10px 26px rgba(0,0,0,.14);
+    }
+    .btnTiny:hover{background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16);}
+
+    .caseSelect{
+      width:100%;
+      padding:10px 11px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color:#eef2ff;
+      outline:none;
+    }
+    .caseSelect:focus{border-color: rgba(245,158,11,.45);}
+
+    .caseTitle{
+      margin-top:10px;
+      font-weight:900;
+      font-size:18px;
+      padding:10px 12px;
+      border-radius:16px;
+      background: rgba(0,0,0,.24);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .caseBody{
+      margin-top:10px;
+      padding:12px;
+      border-radius:18px;
+      background: rgba(0,0,0,.30);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+      overflow:auto;
+      flex:1;
+      min-height: 360px;
+      scrollbar-width: thin;
+    }
+    .caseRow{
+      display:grid;
+      grid-template-columns: 220px 1fr;
+      gap:10px;
+      padding:8px 0;
+      border-bottom:1px dashed rgba(255,255,255,.12);
+    }
+    .caseRow:last-child{border-bottom:none;}
+    .caseK{font-weight:900; color: rgba(255,255,255,.88);}
+    .caseV{color: rgba(255,255,255,.92); line-height:1.35;}
+    .casePara{padding:8px 0; line-height:1.4;}
+    .caseUl{margin:8px 0 8px 18px; padding:0;}
+    .caseUl li{margin:6px 0; line-height:1.35;}
+    .caseSpacer{height:10px;}
+
+    @media (max-width: 980px){
+      .caseCard{min-height:auto;}
+      .caseRow{grid-template-columns:1fr;}
+      .caseTitle{font-size:16px;}
+      .caseBody{min-height:260px;}
+    }
+
+    /* Em desktop, deixa a coluna direita com scroll quando precisar */
+    @media (min-width: 981px){
+      .rightCol .card{overflow:auto;}
+    }
+</style>
 </head>
 
 <body>
@@ -264,71 +388,86 @@
       </div>
     </div>
 
-    <div class="grid">
-      <div class="card">
-        <h2>Dados do paciente</h2>
-
-        <label for="paciente">Nome do paciente</label>
-        <input id="paciente" autocomplete="off" />
-
-        <label for="end1">Endereço (linha 1)</label>
-        <input id="end1" autocomplete="off" />
-
-        <label for="end2">Endereço (linha 2)</label>
-        <input id="end2" autocomplete="off" />
-
-        <div class="row" style="margin-top:10px;">
-          <div>
-            <label for="usoSelect">Uso</label>
-            <select id="usoSelect">
-              <option value="Uso Interno">Uso Interno</option>
-              <option value="Uso Externo">Uso Externo</option>
-              <option value="Uso Colutório">Uso Colutório</option>
-              <option value="Uso Tópico">Uso Tópico</option>
-              <option value="Uso Sublingual">Uso Sublingual</option>
-              <option value="Uso Intranasal">Uso Intranasal</option>
-              <option value="Uso Inalatório">Uso Inalatório</option>
-              <option value="Uso Oftálmico">Uso Oftálmico</option>
-              <option value="Uso Otológico">Uso Otológico</option>
-              <option value="Uso Retal">Uso Retal</option>
-              <option value="Uso Vaginal">Uso Vaginal</option>
-              <option value="Uso Intramuscular">Uso Intramuscular</option>
-              <option value="Uso Intravenoso">Uso Intravenoso</option>
-              <option value="Uso Subcutâneo">Uso Subcutâneo</option>
-              <option value="Uso Intradérmico">Uso Intradérmico</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </div>
-          <div>
-            <label for="usoOutro">Se “Outro”, descreva</label>
-            <input id="usoOutro" autocomplete="off" />
-          </div>
+        <div class="grid">
+      <div class="card caseCard">
+        <div class="caseTop">
+          <h2>Casos Clínicos</h2>
+          <button class="btnTiny" id="btnCopyCase" type="button">📋 Copiar</button>
         </div>
 
-        <div class="row" style="margin-top:10px;">
-          <div>
-            <label for="assinatura">Assinatura (nome do aluno)</label>
-            <input id="assinatura" autocomplete="off" />
-          </div>
-          <div>
-            <label for="data">Data</label>
-            <input id="data" placeholder="dd/mm/aaaa" autocomplete="off" />
-          </div>
-        </div>
+        <label for="caseSelect">Selecione o caso</label>
+        <select id="caseSelect" class="caseSelect"></select>
 
-        <p class="mutedSmall">A posologia sai exatamente como foi escrita. Sem “corrigir”, sem abreviar.</p>
+        <div class="caseTitle" id="caseTitle"></div>
+        <div class="caseBody" id="caseBody" aria-live="polite"></div>
       </div>
 
-      <div class="card">
-        <h2>Medicamentos</h2>
-        <div class="medList" id="medList"></div>
+      <div class="rightCol">
+        <div class="card">
+                <h2>Dados do paciente</h2>
 
-        <div class="addRow">
-          <button class="btnAdd" id="btnAddMed">＋ Adicionar medicamento</button>
-          <span class="mutedSmall" style="margin:0">No PDF: nome em destaque, quantidade à direita, posologia embaixo.</span>
-        </div>
+                <label for="paciente">Nome do paciente</label>
+                <input id="paciente" autocomplete="off" />
+
+                <label for="end1">Endereço (linha 1)</label>
+                <input id="end1" autocomplete="off" />
+
+                <label for="end2">Endereço (linha 2)</label>
+                <input id="end2" autocomplete="off" />
+
+                <div class="row" style="margin-top:10px;">
+                  <div>
+                    <label for="usoSelect">Uso</label>
+                    <select id="usoSelect">
+                      <option value="Uso Interno">Uso Interno</option>
+                      <option value="Uso Externo">Uso Externo</option>
+                      <option value="Uso Colutório">Uso Colutório</option>
+                      <option value="Uso Tópico">Uso Tópico</option>
+                      <option value="Uso Sublingual">Uso Sublingual</option>
+                      <option value="Uso Intranasal">Uso Intranasal</option>
+                      <option value="Uso Inalatório">Uso Inalatório</option>
+                      <option value="Uso Oftálmico">Uso Oftálmico</option>
+                      <option value="Uso Otológico">Uso Otológico</option>
+                      <option value="Uso Retal">Uso Retal</option>
+                      <option value="Uso Vaginal">Uso Vaginal</option>
+                      <option value="Uso Intramuscular">Uso Intramuscular</option>
+                      <option value="Uso Intravenoso">Uso Intravenoso</option>
+                      <option value="Uso Subcutâneo">Uso Subcutâneo</option>
+                      <option value="Uso Intradérmico">Uso Intradérmico</option>
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="usoOutro">Se “Outro”, descreva</label>
+                    <input id="usoOutro" autocomplete="off" />
+                  </div>
+                </div>
+
+                <div class="row" style="margin-top:10px;">
+                  <div>
+                    <label for="assinatura">Assinatura (nome do aluno)</label>
+                    <input id="assinatura" autocomplete="off" />
+                  </div>
+                  <div>
+                    <label for="data">Data</label>
+                    <input id="data" placeholder="dd/mm/aaaa" autocomplete="off" />
+                  </div>
+                </div>
+
+                <p class="mutedSmall">A posologia sai exatamente como foi escrita. Sem “corrigir”, sem abreviar.</p>
+              </div>
+
+        <div class="card">
+                <h2>Medicamentos</h2>
+                <div class="medList" id="medList"></div>
+
+                <div class="addRow">
+                  <button class="btnAdd" id="btnAddMed">＋ Adicionar medicamento</button>
+                  <span class="mutedSmall" style="margin:0">No PDF: nome em destaque, quantidade à direita, posologia embaixo.</span>
+                </div>
+              </div>
       </div>
-    </div>
+    </div></div>
   </div>
 
   <script>
@@ -343,6 +482,412 @@
       return (s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
     }
 
+    const CASES = [
+      { num: 1, name: 'Maria Antonieta', raw: `Identificação: Feminino, 58 anos.
+Dente indicado para exodontia: 14 (primeiro pré-molar superior direito).
+Descrição do caso:
+Fratura coronária extensa com dor à mastigação há 10 dias. Restauração antiga infiltrada. O remanescente coronário é insuficiente para reabilitação.
+Exame radiográfico (periapical/panorâmica):
+Raiz única íntegra, sem curvaturas acentuadas. Lesão periapical discreta. Osso alveolar preservado.
+Hipótese diagnóstica odontológica:
+Dente irrestaurável por fratura e cárie profunda, com periodontite apical crônica.
+História médica e medicamentos em uso:
+• Diabetes mellitus tipo 2 (há 12 anos), em uso de metformina 850 mg duas vezes ao dia e insulina NPH à noite.
+• Hipertensão arterial sistêmica controlada, em uso de losartana 50 mg duas vezes ao dia.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 132/78 mmHg; glicemia capilar pré-atendimento 168 mg/dL.
+Pontos de atenção para decisão medicamentosa:
+• Preferir analgésicos com menor impacto em sangramento e sem interferir no controle glicêmico.
+• Orientar alimentação, hidratação e monitoramento de glicemia no dia do procedimento.` },
+      { num: 2, name: 'João Gustavo', raw: `Identificação: Masculino, 67 anos.
+Dente indicado para exodontia: 26 (primeiro molar superior esquerdo).
+Descrição do caso:
+Dente com grande destruição coronária, mobilidade leve e halitose. Relata episódios de abscesso que drenaram espontaneamente.
+Exame radiográfico (periapical/panorâmica):
+Raízes com divergência discreta, sem sinais de necessidade de odontosecção. Rarefação periapical moderada.
+Hipótese diagnóstica odontológica:
+Dente irrestaurável com infecção crônica recorrente.
+História médica e medicamentos em uso:
+• Doença renal crônica estágio 3 (taxa de filtração estimada em torno de 45 mL/min).
+• Hipertensão arterial sistêmica, em uso de anlodipino 5 mg ao dia.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 138/84 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Evitar anti-inflamatórios não esteroidais por risco de piora da função renal.
+• Atenção a ajuste de dose/intervalo de alguns antibióticos conforme função renal.` },
+      { num: 3, name: 'Patrícia Almeida', raw: `Identificação: Feminino, 34 anos.
+Dente indicado para exodontia: 11 (incisivo central superior direito).
+Descrição do caso:
+Fratura radicular cervical após trauma antigo, com mobilidade grau 2. Dor ao toque e prejuízo estético.
+Exame radiográfico (periapical/panorâmica):
+Linha de fratura próxima ao colo. Sem reabsorções. Exodontia prevista como simples com fórceps.
+Hipótese diagnóstica odontológica:
+Fratura radicular com prognóstico impossível.
+História médica e medicamentos em uso:
+• Gestação de 22 semanas (segundo trimestre), pré-natal regular.
+• Refluxo gastroesofágico com pirose frequente, sem uso contínuo de medicação.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 118/72 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Evitar anti-inflamatórios não esteroidais na gestação.
+• Preferir opções analgésicas compatíveis com gestação e orientar não se automedicar.` },
+      { num: 4, name: 'Carlos Henrique', raw: `Identificação: Masculino, 45 anos.
+Dente indicado para exodontia: 35 (segundo pré-molar inferior esquerdo).
+Descrição do caso:
+Cárie profunda com exposição pulpar e dor espontânea. Paciente solicita exodontia por impossibilidade de tratamento restaurador.
+Exame radiográfico (periapical/panorâmica):
+Raiz única, canal amplo, sem curvaturas. Lâmina dura interrompida apicalmente.
+Hipótese diagnóstica odontológica:
+Pulpite irreversível evoluindo para periodontite apical.
+História médica e medicamentos em uso:
+• Asma moderada persistente, em uso de budesonida/formoterol inalatório e salbutamol sob demanda.
+• Rinite alérgica sazonal.
+Alergias:
+História de broncoespasmo após ibuprofeno.
+Sinais vitais / dados de triagem:
+Pressão arterial 124/76 mmHg; saturação 98%.
+Pontos de atenção para decisão medicamentosa:
+• Evitar anti-inflamatórios não esteroidais por risco de broncoespasmo.
+• Orientar manter broncodilatador de resgate disponível e reconhecer sinais de falta de ar.` },
+      { num: 5, name: 'Helena Duarte', raw: `Identificação: Feminino, 72 anos.
+Dente indicado para exodontia: 22 (incisivo lateral superior esquerdo).
+Descrição do caso:
+Mobilidade grau 3 por doença periodontal avançada. Sangramento gengival frequente e desconforto.
+Exame radiográfico (periapical/panorâmica):
+Perda óssea horizontal importante. Raiz curta. Exodontia prevista como simples.
+Hipótese diagnóstica odontológica:
+Doença periodontal avançada com dente de prognóstico terminal.
+História médica e medicamentos em uso:
+• Fibrilação atrial, em uso de apixabana 5 mg duas vezes ao dia.
+• Hipertensão arterial sistêmica, em uso de hidroclorotiazida 25 mg ao dia.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 140/86 mmHg; frequência cardíaca 78 bpm.
+Pontos de atenção para decisão medicamentosa:
+• Evitar anti-inflamatórios não esteroidais por aumento de risco de sangramento com anticoagulante.
+• Planejar analgesia e orientar medidas hemostáticas e retorno se sangramento persistente.` },
+      { num: 6, name: 'Rogério Nascimento', raw: `Identificação: Masculino, 60 anos.
+Dente indicado para exodontia: 46 (primeiro molar inferior direito).
+Descrição do caso:
+Coroa destruída, dor à percussão e fístula vestibular pequena. Relata febre baixa no fim de semana.
+Exame radiográfico (periapical/panorâmica):
+Lesão periapical evidente. Raízes sem curvaturas importantes. Exodontia possível sem retalho.
+Hipótese diagnóstica odontológica:
+Abscesso periapical crônico com exacerbação aguda em dente irrestaurável.
+História médica e medicamentos em uso:
+• História de endocardite infecciosa prévia (há 8 anos), com seguimento cardiológico.
+• Insuficiência valvar (relato em prontuário).
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 128/80 mmHg; temperatura 37,6 °C.
+Pontos de atenção para decisão medicamentosa:
+• História de endocardite pode indicar profilaxia antibiótica conforme diretrizes.
+• Evitar medicações que aumentem sangramento e orientar sinais de infecção sistêmica.` },
+      { num: 7, name: 'Fernanda Campos', raw: `Identificação: Feminino, 29 anos.
+Dente indicado para exodontia: 24 (primeiro pré-molar superior esquerdo).
+Descrição do caso:
+Tratamento endodôntico antigo falho, dor intermitente e restauração fraturada. Paciente opta por exodontia.
+Exame radiográfico (periapical/panorâmica):
+Raiz única. Radiolucidez periapical discreta. Sem sinais de fratura radicular.
+Hipótese diagnóstica odontológica:
+Falha endodôntica em dente com baixo remanescente coronário.
+História médica e medicamentos em uso:
+• Alergia imediata a penicilinas documentada (urticária e edema labial).
+• Sem outras comorbidades relevantes.
+Alergias:
+Alergia a amoxicilina/penicilina (reação imediata).
+Sinais vitais / dados de triagem:
+Pressão arterial 116/70 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Evitar antibióticos beta-lactâmicos caso haja necessidade terapêutica/profilática.
+• Registrar claramente alergia no receituário.` },
+      { num: 8, name: 'Luiz Fernando', raw: `Identificação: Masculino, 52 anos.
+Dente indicado para exodontia: 15 (segundo pré-molar superior direito).
+Descrição do caso:
+Dor à mastigação e sensibilidade ao frio. Fratura de cúspide. Extração indicada por impossibilidade restauradora.
+Exame radiográfico (periapical/panorâmica):
+Raiz única. Sem lesão periapical. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Fratura coronária extensa em dente irrestaurável.
+História médica e medicamentos em uso:
+• Hepatopatia crônica (esteatose avançada com enzimas elevadas), em acompanhamento.
+• Consumo de álcool relatado como frequente.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 126/82 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Cautela com doses elevadas de paracetamol/acetaminofeno em hepatopatia e consumo de álcool.
+• Evitar prescrições que favoreçam automedicação em excesso.` },
+      { num: 9, name: 'Sandra Ribeiro', raw: `Identificação: Feminino, 41 anos.
+Dente indicado para exodontia: 31 (incisivo central inferior esquerdo).
+Descrição do caso:
+Mobilidade e dor ao morder, com trauma oclusal e recessão. Paciente quer remover por desconforto.
+Exame radiográfico (periapical/panorâmica):
+Perda óssea localizada. Raiz curta. Exodontia simples prevista.
+Hipótese diagnóstica odontológica:
+Dente com prognóstico ruim por perda óssea e trauma oclusal.
+História médica e medicamentos em uso:
+• Hipertensão arterial sistêmica não totalmente controlada, em uso de enalapril 20 mg ao dia.
+• Ansiedade com uso eventual de clonazepam à noite (prescrito).
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 158/94 mmHg em triagem; após repouso 148/90 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Evitar prescrições que elevem pressão arterial; orientar monitoramento.
+• Evitar associações com sedativos sem supervisão; prescrever de forma clara e segura.` },
+      { num: 10, name: 'Márcio Vieira', raw: `Identificação: Masculino, 63 anos.
+Dente indicado para exodontia: 12 (incisivo lateral superior direito).
+Descrição do caso:
+Cárie subgengival profunda com sangramento gengival e dor ao escovar. Indicação de exodontia por impossibilidade restauradora.
+Exame radiográfico (periapical/panorâmica):
+Raiz única. Rarefação periapical discreta. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Dente irrestaurável por cárie subgengival.
+História médica e medicamentos em uso:
+• Doença arterial coronariana com stent há 2 anos.
+• Em uso de ácido acetilsalicílico 100 mg ao dia e clopidogrel 75 mg ao dia.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 134/80 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Evitar anti-inflamatórios não esteroidais por aumento de risco de sangramento com antiplaquetários.
+• Orientar medidas hemostáticas e retorno se sangramento persistente.` },
+      { num: 11, name: 'Isabela Montenegro', raw: `Identificação: Feminino, 38 anos.
+Dente indicado para exodontia: 37 (segundo molar inferior esquerdo).
+Descrição do caso:
+Restauração extensa fraturada, dor à mastigação e desconforto. Sem edema.
+Exame radiográfico (periapical/panorâmica):
+Raízes sem curvaturas. Rarefação apical pequena. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Dente irrestaurável com periodontite apical crônica.
+História médica e medicamentos em uso:
+• Diabetes mellitus tipo 1, em uso de esquema basal-bolus de insulina.
+• Hipotireoidismo, em uso de levotiroxina 75 microgramas ao dia.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Glicemia capilar 142 mg/dL; pressão arterial 120/74 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Controle glicêmico influencia cicatrização; orientar retorno se sinais de infecção.
+• Escrever horários e intervalos por extenso no receituário.` },
+      { num: 12, name: 'Eduardo Siqueira', raw: `Identificação: Masculino, 55 anos.
+Dente indicado para exodontia: 44 (primeiro pré-molar inferior direito).
+Descrição do caso:
+Fratura por bruxismo com dor ao mastigar. Gengiva sem edema.
+Exame radiográfico (periapical/panorâmica):
+Raiz única. Sem lesão periapical. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Fratura coronária extensa em dente irrestaurável.
+História médica e medicamentos em uso:
+• História de úlcera péptica com sangramento há 3 anos; uso de omeprazol em dias alternados.
+• Osteoartrite com dor crônica.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 126/78 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Evitar anti-inflamatórios não esteroidais por risco de recidiva de sangramento gastrointestinal.
+• Prescrever analgesia e orientar dieta e cuidados pós-operatórios.` },
+      { num: 13, name: 'Bruno Paes', raw: `Identificação: Masculino, 49 anos.
+Dente indicado para exodontia: 21 (incisivo central superior esquerdo).
+Descrição do caso:
+Reabsorção externa cervical avançada com sensibilidade. Mobilidade leve.
+Exame radiográfico (periapical/panorâmica):
+Defeito cervical. Raiz preservada apicalmente. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Reabsorção cervical extensa com prognóstico desfavorável.
+História médica e medicamentos em uso:
+• Epilepsia controlada, em uso de carbamazepina 400 mg duas vezes ao dia.
+• Dislipidemia, em uso de sinvastatina 20 mg à noite.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 122/76 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Atenção a interações medicamentosas com anticonvulsivantes.
+• Evitar prescrições que aumentem sedação sem supervisão.` },
+      { num: 14, name: 'Renata Lins', raw: `Identificação: Feminino, 62 anos.
+Dente indicado para exodontia: 33 (canino inferior esquerdo).
+Descrição do caso:
+Cárie radicular extensa com dor ao frio e dificuldade de higienização.
+Exame radiográfico (periapical/panorâmica):
+Raiz longa, sem curvaturas importantes. Sem necessidade de ostectomia. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Cárie radicular extensa em dente irrestaurável.
+História médica e medicamentos em uso:
+• Artrite reumatoide em uso de metotrexato semanal e prednisona 5 mg ao dia.
+• Imunossupressão leve a moderada (relatada em acompanhamento).
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 130/82 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Imunossupressão pode aumentar risco de infecção; avaliar necessidade de antibiótico terapêutico conforme quadro clínico.
+• Prescrição clara e orientação de retorno precoce se sinais de infecção.` },
+      { num: 15, name: 'Thiago Barros', raw: `Identificação: Masculino, 27 anos.
+Dente indicado para exodontia: 45 (segundo pré-molar inferior direito).
+Descrição do caso:
+Cárie profunda com dor espontânea noturna. Sem edema. Paciente prefere exodontia.
+Exame radiográfico (periapical/panorâmica):
+Raiz única. Rarefação apical discreta. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Pulpite irreversível com periodontite apical inicial.
+História médica e medicamentos em uso:
+• Hipertireoidismo em tratamento, em uso de metimazol 10 mg ao dia.
+• Taquicardia ocasional relatada.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Frequência cardíaca 96 bpm; pressão arterial 128/76 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Evitar medicações que aumentem palpitações; orientar repouso e hidratação.
+• Prescrição clara para evitar uso excessivo de analgésicos.` },
+      { num: 16, name: 'Débora Pires', raw: `Identificação: Feminino, 50 anos.
+Dente indicado para exodontia: 16 (primeiro molar superior direito).
+Descrição do caso:
+Dor à percussão e história de abscesso com gosto ruim. Sem edema facial.
+Exame radiográfico (periapical/panorâmica):
+Lesão periapical moderada. Raízes sem curvaturas. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Infecção periapical crônica em dente irrestaurável.
+História médica e medicamentos em uso:
+• Diabetes mellitus tipo 2 com controle irregular (hemoglobina glicada 9,1% relatada).
+• Uso de semaglutida semanal (relato em prontuário).
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Glicemia capilar 232 mg/dL; pressão arterial 136/84 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Hiperglicemia aumenta risco de infecção e retarda cicatrização; considerar conduta conforme protocolo da disciplina.
+• Orientar sinais de infecção e reforçar controle glicêmico; avaliar antibiótico terapêutico conforme sintomas.` },
+      { num: 17, name: 'Vítor Menezes', raw: `Identificação: Masculino, 70 anos.
+Dente indicado para exodontia: 13 (canino superior direito).
+Descrição do caso:
+Cárie radicular e fratura com dor leve. Paciente solicita exodontia.
+Exame radiográfico (periapical/panorâmica):
+Raiz única. Osso preservado. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Cárie radicular extensa em dente irrestaurável.
+História médica e medicamentos em uso:
+• Insuficiência cardíaca estável, em uso de furosemida 40 mg ao dia e carvedilol 12,5 mg duas vezes ao dia.
+• Doença renal crônica estágio 2 (relato).
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 118/70 mmHg; frequência cardíaca 68 bpm.
+Pontos de atenção para decisão medicamentosa:
+• Evitar anti-inflamatórios não esteroidais por risco de retenção hídrica e piora de insuficiência cardíaca.
+• Preferir analgesia simples e orientar sinais de descompensação.` },
+      { num: 18, name: 'Larissa Fonseca', raw: `Identificação: Feminino, 36 anos.
+Dente indicado para exodontia: 41 (incisivo central inferior direito).
+Descrição do caso:
+Dente fraturado e escurecido com dor ao toque. Indicação de exodontia por baixo remanescente.
+Exame radiográfico (periapical/panorâmica):
+Raiz curta. Rarefação apical discreta. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Necrose pulpar com periodontite apical em dente irrestaurável.
+História médica e medicamentos em uso:
+• Depressão em uso de sertralina 100 mg ao dia.
+• Enxaqueca com uso eventual de sumatriptana.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 114/72 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Cautela com analgésicos que aumentem risco de sangramento quando associados a inibidores seletivos da recaptação de serotonina.
+• Evitar combinações que aumentem sonolência e risco de queda.` },
+      { num: 19, name: 'Paulo Sérgio', raw: `Identificação: Masculino, 59 anos.
+Dente indicado para exodontia: 27 (segundo molar superior esquerdo).
+Descrição do caso:
+Grande destruição coronária com dor à mastigação. Sem edema.
+Exame radiográfico (periapical/panorâmica):
+Raízes curtas. Exodontia simples. Seio maxilar sem comunicação prevista.
+Hipótese diagnóstica odontológica:
+Dente irrestaurável por cárie extensa com dor funcional.
+História médica e medicamentos em uso:
+• Hepatite C tratada, com histórico de alteração de coagulação no passado (relata plaquetas limítrofes).
+• Uso diário de dipirona para dores musculares (autorreferido).
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 130/80 mmHg.
+Pontos de atenção para decisão medicamentosa:
+• Evitar doses excessivas de analgésicos e reforçar não duplicar medicações (risco de superdosagem).
+• Atenção à história de alterações hematológicas; orientar retorno se sangramento persistente.
+Tarefa do aluno:
+Prescrever analgesia com orientação clara de dose máxima diária e cuidados pós-operatórios.` },
+      { num: 20, name: 'Camila Azevedo', raw: `Identificação: Feminino, 47 anos.
+Dente indicado para exodontia: 32 (incisivo lateral inferior esquerdo).
+Descrição do caso:
+Mobilidade grau 2 e dor ao mastigar. Higiene difícil e gengiva inflamada.
+Exame radiográfico (periapical/panorâmica):
+Perda óssea horizontal moderada. Raiz curta. Exodontia simples.
+Hipótese diagnóstica odontológica:
+Doença periodontal moderada a avançada com dente de prognóstico ruim.
+História médica e medicamentos em uso:
+• Prótese valvar mecânica, em uso de varfarina (controle por INR).
+• História de acidente vascular cerebral isquêmico há 5 anos.
+Alergias:
+Nega alergias medicamentosas.
+Sinais vitais / dados de triagem:
+Pressão arterial 136/82 mmHg; último INR relatado 2,6 (há 1 semana).
+Pontos de atenção para decisão medicamentosa:
+• Evitar anti-inflamatórios não esteroidais e outras medicações que aumentem sangramento com varfarina.
+• Procedimento exige cuidado com hemostasia e registro; discutir conduta com anticoagulação conforme protocolo institucional.` }
+    ];
+
+
+    function formatCaseHTML(raw){
+      const lines = String(raw || '').split('\n');
+      let html = '';
+      let inList = false;
+
+      for(const line0 of lines){
+        const line = (line0 ?? '').trim();
+
+        if(!line){
+          if(inList){ html += '</ul>'; inList = false; }
+          html += '<div class="caseSpacer"></div>';
+          continue;
+        }
+
+        if(line.startsWith('•')){
+          if(!inList){ html += '<ul class="caseUl">'; inList = true; }
+          html += `<li>${escapeHtml(line.replace(/^•\s*/,''))}</li>`;
+          continue;
+        }
+
+        if(inList){ html += '</ul>'; inList = false; }
+
+        const m = line.match(/^(.+?):\s*(.*)$/);
+        if(m){
+          const key = (m[1] || '').trim();
+          const val = (m[2] || '').trim();
+
+          if(val){
+            html += `<div class="caseRow"><div class="caseK">${escapeHtml(key)}:</div><div class="caseV">${escapeHtml(val)}</div></div>`;
+          } else {
+            html += `<div class="casePara"><span class="caseK">${escapeHtml(key)}:</span></div>`;
+          }
+        } else {
+          html += `<div class="casePara">${escapeHtml(line)}</div>`;
+        }
+      }
+
+      if(inList) html += '</ul>';
+      return html;
+    }
     const medListEl = document.getElementById('medList');
     const meds = [];
 
