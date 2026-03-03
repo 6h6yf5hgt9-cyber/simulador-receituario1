@@ -215,6 +215,33 @@
       .actions{ justify-self: center !important; }
     }
 
+  
+    /* ===== Correção: botões à direita em desktop (mantém PDF intacto) ===== */
+    .top{
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      flex-wrap: wrap !important;
+    }
+    .actions{
+      margin-left: auto !important;
+      justify-content: flex-end !important;
+    }
+
+    /* Em telas menores, pode empilhar */
+    @media (max-width: 720px){
+      .top{
+        flex-direction: column !important;
+        align-items: center !important;
+      }
+      .actions{
+        margin-left: 0 !important;
+        width: 100% !important;
+        justify-content: center !important;
+      }
+    }
+
   </style>
 </head>
 
